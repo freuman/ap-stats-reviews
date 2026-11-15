@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Unit 2, Part II Review</title>
+<style>
+  :root {
+    --ink: #1a1a1a; --muted: #5f6368; --line: #c9c9c9; --soft: #f4f4f4;
+    --accent: #1f4e79; --accent-soft: #e6eef6; --right: #1e7b34; --right-bg: #e7f4ea;
+    --wrong: #b3261e; --wrong-bg: #fbe9e7;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #fff; color: var(--ink);
+         font: 17px/1.5 "Times New Roman", Times, Georgia, serif; }
+  header.top { background: var(--accent); color: #fff; padding: 12px 16px;
+               font-family: Arial, Helvetica, sans-serif; }
+  header.top h1 { margin: 0; font-size: 20px; font-weight: 600; }
+  header.top p { margin: 2px 0 0; font-size: 14px; opacity: .85; }
+  main { max-width: 900px; margin: 0 auto; padding: 16px; }
+  .info { display: flex; flex-wrap: wrap; gap: 12px 24px; padding: 14px 16px; background: var(--soft);
+          border: 1px solid var(--line); border-radius: 6px; font-family: Arial, sans-serif; font-size: 15px; }
+  .info label { display: flex; flex-direction: column; gap: 4px; font-weight: 600; }
+  .info input { font: inherit; font-weight: 400; padding: 6px 8px; border: 1px solid #aaa; border-radius: 4px; min-width: 220px; }
+  section.q { border-top: 2px solid var(--line); margin-top: 28px; padding-top: 8px; }
+  .qhead { font-family: Arial, sans-serif; font-size: 14px; color: var(--muted); font-weight: 700;
+           text-transform: uppercase; letter-spacing: .04em; display: flex; justify-content: space-between; }
+  .qscore { color: var(--accent); }
+  .part { margin: 22px 0; }
+  p { margin: 10px 0; }
+  .frame { line-height: 2.6; }
+  table.dist { border-collapse: collapse; margin: 10px 0; }
+  table.dist td, table.dist th { border: 1px solid #999; padding: 4px 12px; text-align: center; font-weight: 400; }
+  table.dist th { background: var(--soft); text-align: left; }
+
+  /* inline answer controls */
+  input.num, select.sel { font: inherit; font-size: 16px; height: 34px; border: 1px solid #b5b5b5;
+       border-radius: 3px; background: #f7f7f7; padding: 0 6px; vertical-align: middle; }
+  input.num { width: 110px; }
+  select.sel { min-width: 76px; max-width: 100%; }
+  .right-mark { border-color: var(--right) !important; background: var(--right-bg) !important; }
+  .wrong-mark { border-color: var(--wrong) !important; background: var(--wrong-bg) !important; }
+  input.num:disabled, select.sel:disabled { color: var(--ink); opacity: 1; }
+  .round { color: var(--muted); font-size: 15px; }
+
+  /* multiple choice */
+  .mc label { display: flex; gap: 10px; align-items: flex-start; padding: 6px 8px; border-radius: 4px; cursor: pointer; }
+  .mc label:hover { background: var(--soft); }
+  .mc input { margin-top: 5px; }
+  .mc.right-mark, .mc.wrong-mark { border: 1px solid; border-radius: 6px; }
+  .hist-row { display: flex; flex-wrap: wrap; gap: 14px; }
+  .hist-row label { flex-direction: column; align-items: center; border: 1px solid var(--line); }
+
+  /* sorting / labeling modules */
+  .sort { border: 1px solid var(--line); border-radius: 6px; padding: 12px; margin-top: 8px; }
+  .hint { font-family: Arial, sans-serif; font-size: 13px; color: var(--muted); margin: 0 0 10px; }
+  .zones { display: grid; gap: 10px; }
+  .zrow { display: grid; grid-template-columns: 170px 1fr; gap: 10px; align-items: stretch; }
+  .zlabel { background: var(--soft); border: 1px solid var(--line); border-radius: 4px; padding: 8px; font-weight: 700; }
+  .zone { min-height: 48px; border: 2px dashed #b9b9b9; border-radius: 4px; padding: 6px;
+          display: flex; flex-wrap: wrap; gap: 6px; align-content: flex-start; }
+  .zone.over, .zone.targetable { border-color: var(--accent); background: var(--accent-soft); }
+  .bank-title { font-family: Arial, sans-serif; font-weight: 700; font-size: 14px; margin: 14px 0 6px; }
+  .bank { display: flex; flex-wrap: wrap; gap: 8px; min-height: 48px; padding: 8px; background: var(--soft);
+          border: 1px solid var(--line); border-radius: 4px; }
+  .chip { background: #fff; border: 1px solid #8a8a8a; border-radius: 4px; padding: 6px 10px; cursor: grab;
+          font-size: 15px; line-height: 1.35; max-width: 100%; user-select: none; box-shadow: 0 1px 2px rgba(0,0,0,.12); }
+  .chip.picked { outline: 3px solid var(--accent); }
+  .locked .chip { cursor: default; }
+
+  .curve-wrap { position: relative; width: 100%; max-width: 640px; }
+  .curve-wrap svg { width: 100%; height: auto; display: block; }
+  .slots { position: relative; height: 54px; }
+  .slots .zone { position: absolute; transform: translateX(-50%); width: 13.5%; min-height: 44px;
+                 justify-content: center; padding: 3px; }
+  .slots .chip { padding: 5px 4px; font-size: 14px; }
+
+  .actions { margin: 36px 0 20px; display: flex; flex-wrap: wrap; gap: 12px; font-family: Arial, sans-serif; }
+  button { font: 600 15px Arial, sans-serif; padding: 10px 18px; border-radius: 5px; border: 1px solid var(--accent);
+           background: var(--accent); color: #fff; cursor: pointer; }
+  button.secondary { background: #fff; color: var(--accent); }
+  button:disabled { opacity: .5; cursor: default; }
+  #results { display: none; margin-top: 20px; padding: 16px; border: 2px solid var(--accent); border-radius: 6px;
+             font-family: Arial, sans-serif; background: var(--accent-soft); }
+  #results h2 { margin: 0 0 6px; font-size: 20px; }
+  #results table { border-collapse: collapse; margin-top: 8px; }
+  #results td { padding: 2px 14px 2px 0; }
+  .msg { font-family: Arial, sans-serif; color: var(--wrong); font-size: 14px; }
+  footer { color: var(--muted); font-family: Arial, sans-serif; font-size: 12px; text-align: center; padding: 24px 16px; }
+
+  @media (max-width: 600px) {
+    body { font-size: 16px; }
+    .zrow { grid-template-columns: 1fr; }
+    .slots .chip { font-size: 12px; padding: 4px 2px; }
+  }
+  @media print {
+    header.top { background: none; color: #000; border-bottom: 2px solid #000; }
+    .actions, .hint { display: none; }
+    section.q { break-inside: avoid-page; }
+  }
+</style>
+</head>
+<body>
+<header class="top">
+  <h1>Unit 2, Part II Review Exercises</h1>
+  <p>AP Statistics &middot; 8 questions &middot; Calculator allowed</p>
+</header>
+
+<main>
+  <div class="info">
+    <label>Student name <input id="studentName" autocomplete="name" placeholder="First and last name"></label>
+    <label>Class period <input id="studentPeriod" placeholder="e.g., 3"></label>
+  </div>
+  <p class="hint" style="margin-top:10px">Drag answers from each Answer Bank into the boxes (or tap an answer, then tap a box). Tap an answer in a box to send it back. Your work is saved in this browser until you submit.</p>
+
+  <!-- ============ QUESTION 1 ============ -->
+  <section class="q" data-q="1">
+    <div class="qhead"><span>Question 1 of 8</span><span class="qscore"></span></div>
+    <p>Let <i>X</i> = the number of times a randomly selected student at a large high school visits the library in a given week. The table gives the probability distribution of <i>X</i>.</p>
+    <table class="dist">
+      <tr><th>Visits, <i>x</i></th><td>0</td><td>1</td><td>2</td><td>3</td><td>4</td></tr>
+      <tr><th>Probability, <i>P</i>(<i>X</i> = <i>x</i>)</th><td>0.25</td><td>0.30</td><td>0.20</td><td>0.15</td><td>??</td></tr>
+    </table>
+
+    <div class="part">
+      <p>(a) Find <i>P</i>(<i>X</i> = 4). <input class="num" data-ans="0.10" data-tol="0.0001" aria-label="P(X=4)"> <span class="round">(Do not round.)</span></p>
+      <p>Describe this probability in words.</p>
+      <p class="frame">There is a
+        <select class="sel" data-ans="b"><option value=""></option><option value="a">0.25</option><option value="b">0.10</option><option value="c">0.90</option><option value="d">4</option></select>
+        probability that a
+        <select class="sel" data-ans="c"><option value=""></option><option value="a">student who visits the library</option><option value="b">sample of 4 students</option><option value="c">randomly selected student</option></select>
+        would visit the library
+        <select class="sel" data-ans="d"><option value=""></option><option value="a">at most 4 times</option><option value="b">at least 4 times</option><option value="c">0.10 times</option><option value="d">exactly 4 times</option></select>
+        in a given week.</p>
+    </div>
+
+    <div class="part">
+      <p>(b) Find the probability that a randomly selected student visits the library at most 1 time in a week.
+        <input class="num" data-ans="0.55" data-tol="0.0001" aria-label="P(X at most 1)"> <span class="round">(Do not round.)</span></p>
+    </div>
+
+    <div class="part">
+      <p>(c) Which histogram correctly displays the probability distribution of <i>X</i>?</p>
+      <div class="mc hist-row" data-ans="b" data-name="q1c">
+        <label><input type="radio" name="q1c" value="a"><span>A</span><span class="hist" data-h="0.10,0.15,0.20,0.30,0.25"></span></label>
+        <label><input type="radio" name="q1c" value="b"><span>B</span><span class="hist" data-h="0.25,0.30,0.20,0.15,0.10"></span></label>
+        <label><input type="radio" name="q1c" value="c"><span>C</span><span class="hist" data-h="0.25,0.30,0.20,0.15,0.00"></span></label>
+      </div>
+      <p>Describe its shape.</p>
+      <p class="frame">The probability distribution of library visits is
+        <select class="sel" data-ans="c"><option value=""></option><option value="a">skewed left</option><option value="b">roughly symmetric</option><option value="c">skewed right</option><option value="d">uniform</option></select>
+        with a single peak at
+        <select class="sel" data-ans="b"><option value=""></option><option value="a">X = 0</option><option value="b">X = 1</option><option value="c">X = 2</option><option value="d">X = 4</option></select>.</p>
+    </div>
+
+    <div class="part">
+      <p>(d) Calculate and interpret: (i) the expected number of library visits and (ii) the standard deviation of the number of library visits.</p>
+      <div class="sort" data-id="q1d">
+        <p class="hint">Each box needs one number and one interpretation.</p>
+        <div class="zones">
+          <div class="zrow"><div class="zlabel">(i) Expected value</div><div class="zone" data-accept="q1d-155,q1d-int1"></div></div>
+          <div class="zrow"><div class="zlabel">(ii) Standard deviation</div><div class="zone" data-accept="q1d-128,q1d-int2"></div></div>
+        </div>
+        <div class="bank-title">Answer Bank</div>
+        <div class="bank">
+          <div class="chip" data-id="q1d-2">2</div>
+          <div class="chip" data-id="q1d-155">1.55</div>
+          <div class="chip" data-id="q1d-165">1.65</div>
+          <div class="chip" data-id="q1d-128">1.28</div>
+          <div class="chip" data-id="q1d-020">0.20</div>
+          <div class="chip" data-id="q1d-int1">If many, many students are randomly selected, their mean number of library visits per week would be about E(X).</div>
+          <div class="chip" data-id="q1d-bad1">The average number of library visits for 100 randomly selected students is E(X).</div>
+          <div class="chip" data-id="q1d-int2">If many, many students are randomly selected, their numbers of weekly library visits would typically vary from the mean of E(X) by about SD(X).</div>
+          <div class="chip" data-id="q1d-bad2">The numbers of library visits for a random sample of students typically vary by about SD(X) from each other.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ QUESTION 2 ============ -->
+  <section class="q" data-q="2">
+    <div class="qhead"><span>Question 2 of 8</span><span class="qscore"></span></div>
+    <p>A cereal company claims that 15% of its boxes contain a prize. Assume that the company&rsquo;s claim is true. You randomly select 10 boxes from a large shipment of several thousand boxes. Let <i>X</i> = the number of boxes that contain a prize.</p>
+
+    <div class="part">
+      <p>(a) Explain why <i>X</i> can be modeled by a binomial distribution even though the sample was selected without replacement.</p>
+      <div class="sort" data-id="q2a">
+        <div class="zones">
+          <div class="zrow"><div class="zlabel">Binary?</div><div class="zone" data-accept="q2a-b"></div></div>
+          <div class="zrow"><div class="zlabel">Independent?</div><div class="zone" data-accept="q2a-i"></div></div>
+          <div class="zrow"><div class="zlabel">Number?</div><div class="zone" data-accept="q2a-n"></div></div>
+          <div class="zrow"><div class="zlabel">Same probability?</div><div class="zone" data-accept="q2a-s"></div></div>
+        </div>
+        <div class="bank-title">Answer Bank</div>
+        <div class="bank">
+          <div class="chip" data-id="q2a-xb">&ldquo;Success&rdquo; = 10 boxes with a prize<br>&ldquo;Failure&rdquo; = not 10 boxes with a prize</div>
+          <div class="chip" data-id="q2a-n">n = 10</div>
+          <div class="chip" data-id="q2a-xi">The trials are independent because the boxes were selected randomly.</div>
+          <div class="chip" data-id="q2a-s">p = 0.15</div>
+          <div class="chip" data-id="q2a-b">&ldquo;Success&rdquo; = a box with a prize<br>&ldquo;Failure&rdquo; = a box without a prize</div>
+          <div class="chip" data-id="q2a-xn">n = 15</div>
+          <div class="chip" data-id="q2a-i">Because n = 10 &le; 10% of the several thousand boxes in the shipment, we can treat the trials as independent even though the sample was selected without replacement.</div>
+          <div class="chip" data-id="q2a-xs">p = 0.10</div>
+        </div>
+      </div>
+      <p>Because all four conditions are met, this is a binomial setting and <i>X</i> can be modeled with a binomial distribution.</p>
+    </div>
+
+    <div class="part">
+      <p>(b) Find the probability that exactly 2 of the 10 boxes contain a prize.
+        <input class="num" data-ans="0.276" data-tol="0.0006" aria-label="P(X=2)"> <span class="round">(Round to 3 decimal places.)</span></p>
+    </div>
+
+    <div class="part">
+      <p>(c) Calculate <i>P</i>(<i>X</i> &ge; 3). <input class="num" data-ans="0.180" data-tol="0.0006" aria-label="P(X at least 3)"> <span class="round">(Round to 3 decimal places.)</span></p>
+      <p>Describe this probability in words.</p>
+      <p class="frame">There is a
+        <select class="sel" data-ans="b"><option value=""></option><option value="a">13.0%</option><option value="b">18.0%</option><option value="c">82.0%</option><option value="d">30.0%</option></select>
+        chance that
+        <select class="sel" data-ans="a"><option value=""></option><option value="a">3 or more</option><option value="b">exactly 3</option><option value="c">fewer than 3</option><option value="d">at most 3</option></select>
+        of the 10 boxes will contain a prize.</p>
+    </div>
+
+    <div class="part">
+      <p>(d) Suppose that 3 of your 10 boxes contain a prize. Does this result provide convincing evidence that the company&rsquo;s 15% claim is false? Justify your answer.</p>
+      <div class="sort" data-id="q2d">
+        <div class="zones">
+          <div class="zrow"><div class="zlabel">Yes or No</div><div class="zone" data-accept="q2d-no"></div></div>
+          <div class="zrow"><div class="zlabel">Justify</div><div class="zone" data-accept="q2d-j"></div></div>
+        </div>
+        <div class="bank-title">Answer Bank</div>
+        <div class="bank">
+          <div class="chip" data-id="q2d-yes">Yes</div>
+          <div class="chip" data-id="q2d-x1">It is very unlikely to get 3 or more prize boxes in a random sample of 10 boxes by chance alone when 15% of boxes contain a prize.</div>
+          <div class="chip" data-id="q2d-no">No</div>
+          <div class="chip" data-id="q2d-j">It is fairly likely to get 3 or more prize boxes in a random sample of 10 boxes by chance alone when 15% of boxes contain a prize.</div>
+          <div class="chip" data-id="q2d-x2">It is impossible to get 3 or more prize boxes in a random sample of 10 boxes when 15% of boxes contain a prize.</div>
+          <div class="chip" data-id="q2d-x3">3 out of 10 is 30%, which is greater than 15%.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ QUESTION 3 ============ -->
+  <section class="q" data-q="3">
+    <div class="qhead"><span>Question 3 of 8</span><span class="qscore"></span></div>
+    <p>A cereal company claims that 15% of its boxes contain a prize. Assume that the company&rsquo;s claim is true. You randomly select 10 boxes from a large shipment. Let <i>X</i> = the number of boxes that contain a prize.</p>
+    <div class="sort" data-id="q3">
+      <div class="zones">
+        <div class="zrow"><div class="zlabel">(a) Calculate the mean of <i>X</i>.</div><div class="zone" data-accept="q3-15"></div></div>
+        <div class="zrow"><div class="zlabel">(b) Interpret the mean of <i>X</i>.</div><div class="zone" data-accept="q3-im"></div></div>
+        <div class="zrow"><div class="zlabel">(c) Calculate the standard deviation of <i>X</i>.</div><div class="zone" data-accept="q3-113"></div></div>
+        <div class="zrow"><div class="zlabel">(d) Interpret the standard deviation of <i>X</i>.</div><div class="zone" data-accept="q3-is"></div></div>
+      </div>
+      <div class="bank-title">Answer Bank</div>
+      <div class="bank">
+        <div class="chip" data-id="q3-015">0.15</div>
+        <div class="chip" data-id="q3-113">1.13</div>
+        <div class="chip" data-id="q3-128">1.28</div>
+        <div class="chip" data-id="q3-15">1.5</div>
+        <div class="chip" data-id="q3-85">8.5</div>
+        <div class="chip" data-id="q3-im">If we were to select many, many random samples of 10 boxes, we would expect to get about &mu;<sub>X</sub> prize boxes per sample, on average.</div>
+        <div class="chip" data-id="q3-is">If we were to select many, many random samples of 10 boxes, the number of prize boxes would typically vary by about &sigma;<sub>X</sub> boxes from the mean of &mu;<sub>X</sub> boxes.</div>
+        <div class="chip" data-id="q3-x1">If we were to select many, many random samples of 10 boxes, the number of prize boxes would typically vary by about &sigma;<sub>X</sub> boxes from each other.</div>
+        <div class="chip" data-id="q3-x2">If we were to select 100 random samples of 10 boxes, we would expect to get about &mu;<sub>X</sub> prize boxes per sample, on average.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ QUESTION 4 ============ -->
+  <section class="q" data-q="4">
+    <div class="qhead"><span>Question 4 of 8</span><span class="qscore"></span></div>
+    <p>The weight <i>X</i> (in grams) of a randomly selected apple of a certain variety can be modeled by a normal distribution with &mu; = 150 g and &sigma; = 12 g.</p>
+    <div class="part">
+      <p>(a) Sketch the normal density curve. Label the mean and the points that are 1, 2, and 3 standard deviations from the mean.</p>
+      <div class="sort" data-id="q4a">
+        <div class="curve-wrap">
+          <svg id="normalCurve" viewBox="0 0 640 190" role="img" aria-label="Normal curve with seven blank tick labels"></svg>
+          <div class="slots">
+            <div class="zone" style="left:9.375%"  data-accept="q4-114"></div>
+            <div class="zone" style="left:23.4375%" data-accept="q4-126"></div>
+            <div class="zone" style="left:37.5%"   data-accept="q4-138"></div>
+            <div class="zone" style="left:51.5625%" data-accept="q4-150"></div>
+            <div class="zone" style="left:65.625%" data-accept="q4-162"></div>
+            <div class="zone" style="left:79.6875%" data-accept="q4-174"></div>
+            <div class="zone" style="left:93.75%"  data-accept="q4-186"></div>
+          </div>
+          <div style="text-align:center;font-size:15px">Weight (g)</div>
+        </div>
+        <div class="bank-title">Answer Bank</div>
+        <div class="bank">
+          <div class="chip" data-id="q4-120">120</div>
+          <div class="chip" data-id="q4-162">162</div>
+          <div class="chip" data-id="q4-114">114</div>
+          <div class="chip" data-id="q4-0">0</div>
+          <div class="chip" data-id="q4-186">186</div>
+          <div class="chip" data-id="q4-138">138</div>
+          <div class="chip" data-id="q4-12">12</div>
+          <div class="chip" data-id="q4-150">150</div>
+          <div class="chip" data-id="q4-174">174</div>
+          <div class="chip" data-id="q4-180">180</div>
+          <div class="chip" data-id="q4-126">126</div>
+        </div>
+      </div>
+    </div>
+    <div class="part">
+      <p>(b) Use the empirical rule to estimate the probability that a randomly selected apple weighs more than 138 grams.
+        <input class="num" data-ans="0.84" data-tol="0.0001" aria-label="P(X greater than 138)"> <span class="round">(Do not round.)</span></p>
+    </div>
+    <div class="part">
+      <p>(c) Use the empirical rule to estimate the probability that a randomly selected apple weighs between 126 and 174 grams.
+        <input class="num" data-ans="0.95" data-tol="0.0001" aria-label="P(126 to 174)"> <span class="round">(Do not round.)</span></p>
+    </div>
+  </section>
+
+  <!-- ============ QUESTION 5 ============ -->
+  <section class="q" data-q="5">
+    <div class="qhead"><span>Question 5 of 8</span><span class="qscore"></span></div>
+    <p>The lifetimes (on a single charge) of a brand of rechargeable battery are approximately normal with mean 40 hours and standard deviation 6 hours.</p>
+    <div class="part">
+      <p>(a) What is the probability that a randomly selected battery lasts more than 35 hours?
+        <input class="num" data-ans="0.7977" data-tol="0.0011" aria-label="P(more than 35)"> <span class="round">(Round to 4 decimal places.)</span></p>
+    </div>
+    <div class="part">
+      <p>(b) A quality inspector discards the 15% of batteries with the shortest lifetimes. What is the shortest lifetime among the batteries that are kept?
+        <input class="num" data-ans="33.8" data-tol="0.06" aria-label="shortest kept lifetime"> hours <span class="round">(Round to 1 decimal place.)</span></p>
+    </div>
+  </section>
+
+  <!-- ============ QUESTION 6 ============ -->
+  <section class="q" data-q="6">
+    <div class="qhead"><span>Question 6 of 8</span><span class="qscore"></span></div>
+    <p>A coffee shop&rsquo;s machine fills cups with an amount of coffee that can be modeled by a normal distribution with mean 8.10 ounces and standard deviation 0.15 ounce.</p>
+    <div class="part">
+      <p>(a) If the shop&rsquo;s goal is to put between 8.0 and 8.3 ounces of coffee in each cup, about what percentage of the time will this happen?
+        <input class="num" data-ans="65.63" data-tol="0.06" aria-label="percent between 8.0 and 8.3"> % <span class="round">(Round to 2 decimal places.)</span></p>
+    </div>
+    <div class="part">
+      <p>(b) Suppose the manager adjusts the machine so the mean amount is 8.15 ounces. At what standard deviation should the machine be set so that at least 98% of cups have between 8.0 and 8.3 ounces of coffee?</p>
+      <p><b>Let&rsquo;s summarize what we know:</b></p>
+      <p>Draw a normal curve. What value did you place on the horizontal axis in the center of the curve?
+        &mu; = <input class="num" data-ans="8.15" data-tol="0.0001" aria-label="mu"></p>
+      <p>Label 8.0 ounces and 8.3 ounces on the horizontal axis.</p>
+      <p>What is the area under the curve between 8.0 ounces and 8.3 ounces? <input class="num" data-ans="0.98" data-tol="0.0001" aria-label="area between"></p>
+      <p>What is the area in each tail? <input class="num" data-ans="0.01" data-tol="0.0001" aria-label="tail area"> (Label the left tail area.)</p>
+      <p>What <i>z</i>-score corresponds to the left tail area? <i>z</i> = <input class="num" data-ans="-2.326" data-tol="0.005" aria-label="z-score"> <span class="round">(Hint: Use invNorm or Table A.)</span></p>
+      <p class="frame">Summary: &mu; = <input class="num" data-ans="8.15" data-tol="0.0001" aria-label="summary mu">,
+        <i>z</i> = <input class="num" data-ans="-2.326" data-tol="0.005" aria-label="summary z">,
+        Boundary value = <input class="num" data-ans="8.0" data-tol="0.0001" aria-label="boundary value">.</p>
+      <p>Substitute these values into the formula <i>z</i> = (value &minus; mean) / SD and solve for the standard deviation.</p>
+      <p>&sigma; = <input class="num" data-ans="0.06448" data-tol="0.0005" aria-label="sigma"> ounces <span class="round">(Round to 3 decimal places.)</span></p>
+    </div>
+  </section>
+
+  <!-- ============ QUESTION 7 ============ -->
+  <section class="q" data-q="7">
+    <div class="qhead"><span>Question 7 of 8</span><span class="qscore"></span></div>
+    <p>A town council randomly selects 400 registered voters in the town. Of these, 148 say they support building a new park.</p>
+    <p>Identify the population parameter, the point estimator, and the point estimate.</p>
+    <div class="sort" data-id="q7">
+      <div class="zones">
+        <div class="zrow"><div class="zlabel">Population Parameter</div><div class="zone" data-accept="q7-par"></div></div>
+        <div class="zrow"><div class="zlabel">Point Estimator</div><div class="zone" data-accept="q7-est"></div></div>
+        <div class="zrow"><div class="zlabel">Point Estimate</div><div class="zone" data-accept="q7-val"></div></div>
+      </div>
+      <div class="bank-title">Answer Bank</div>
+      <div class="bank">
+        <div class="chip" data-id="q7-n">n = 400</div>
+        <div class="chip" data-id="q7-x1"><i>p</i> = the proportion of all registered voters in the town</div>
+        <div class="chip" data-id="q7-par"><i>p</i> = the proportion of all registered voters in the town who support building a new park</div>
+        <div class="chip" data-id="q7-val"><i>p&#770;</i> = 148/400 = 0.37</div>
+        <div class="chip" data-id="q7-est"><i>p&#770;</i> = the proportion of voters in the sample who support building a new park</div>
+        <div class="chip" data-id="q7-x2"><i>p&#770;</i> = 148</div>
+        <div class="chip" data-id="q7-x3"><i>p&#770;</i> = the proportion of all registered voters in the town who support building a new park</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ QUESTION 8 ============ -->
+  <section class="q" data-q="8">
+    <div class="qhead"><span>Question 8 of 8</span><span class="qscore"></span></div>
+    <p>A bakery claims that the weights of its cookies are approximately normally distributed with a mean of 30 grams and a standard deviation of 2 grams. A customer buys 8 randomly selected cookies and finds that their mean weight is only 28.4 grams.</p>
+    <p>The customer suspects that the bakery is overstating the weight of its cookies. To test this, the customer simulates 200 random samples of size <i>n</i> = 8 from a normal distribution with mean 30 g and standard deviation 2 g. Here is a dotplot of the means from these 200 simulated samples.</p>
+    <svg id="dotplot" viewBox="0 0 680 210" style="width:100%;max-width:680px;height:auto" role="img" aria-label="Dotplot of 200 simulated sample means"></svg>
+
+    <div class="part">
+      <p>(a) There is one dot at 28.0. Explain what this dot represents.</p>
+      <div class="mc" data-ans="a" data-name="q8a">
+        <label><input type="radio" name="q8a" value="b"><span>Of the 8 cookies purchased by the customer, one cookie weighed 28.0 grams.</span></label>
+        <label><input type="radio" name="q8a" value="a"><span>In one simulated SRS of size <i>n</i> = 8, the mean weight was 28.0 grams.</span></label>
+        <label><input type="radio" name="q8a" value="c"><span>In 8 simulated simple random samples, the mean weight was 28.0 grams.</span></label>
+        <label><input type="radio" name="q8a" value="d"><span>Of the 200 cookies in the simulation, one cookie weighed 28.0 grams.</span></label>
+      </div>
+    </div>
+
+    <div class="part">
+      <p>(b) Would it be unusual to get a sample mean of <i>x&#772;</i> = 28.4 grams or less in a sample of size <i>n</i> = 8 from a population with mean 30 g and standard deviation 2 g? Justify your answer.</p>
+      <p class="frame">
+        <select class="sel" data-ans="a"><option value=""></option><option value="a">Yes</option><option value="b">No</option></select>.
+        In the 200 simulated samples,
+        <select class="sel" data-ans="c"><option value=""></option><option value="a">0 (0%)</option><option value="b">28 (14%)</option><option value="c">3 (1.5%)</option><option value="d">10 (5%)</option></select>
+        of the SRSs had a mean of 28.4 or less.</p>
+    </div>
+
+    <div class="part">
+      <p>(c) Based on the actual sample and your answer to part (b), is there convincing evidence that the mean weight of this bakery&rsquo;s cookies is less than 30 grams? Explain your reasoning.</p>
+      <p class="frame">
+        <select class="sel" data-ans="a"><option value=""></option><option value="a">Yes</option><option value="b">No</option></select>.
+        Because it is
+        <select class="sel" data-ans="b"><option value=""></option><option value="a">fairly likely</option><option value="b">very unlikely</option><option value="c">impossible</option></select>
+        to get a sample mean of 28.4 or less by chance alone when &mu; = 30, there is
+        <select class="sel" data-ans="a"><option value=""></option><option value="a">convincing evidence</option><option value="b">not convincing evidence</option><option value="c">proof</option></select>
+        that the mean weight of this bakery&rsquo;s cookies is less than 30 grams.</p>
+    </div>
+  </section>
+
+  <div class="actions">
+    <button id="submitBtn">Submit &amp; see score</button>
+    <button id="printBtn" class="secondary">Print / Save as PDF</button>
+    <span class="msg" id="msg"></span>
+  </div>
+  <div id="results"></div>
+</main>
+<footer>Unit 2, Part II review &middot; original practice problems</footer>
+
+<script>
+(function () {
+  "use strict";
+  // Paste your Google Apps Script web app URL between the quotes:
+  var SHEET_URL = "https://script.google.com/macros/s/AKfycbxpNhyh6ZfyqDwGGZqW33pwuYoao3rKvLahbNcJq0tHZOzch3-9qK-u3erbxOGk0BMC/exec";
+  var STORE = "u2p2-review-v1";
+  var locked = false;
+
+  /* ---------- drawings ---------- */
+  var NS = "http://www.w3.org/2000/svg";
+  function el(tag, attrs, parent) {
+    var e = document.createElementNS(NS, tag);
+    for (var k in attrs) e.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(e);
+    return e;
+  }
+
+  // Q1 histograms
+  document.querySelectorAll(".hist").forEach(function (span) {
+    var h = span.dataset.h.split(",").map(Number);
+    var svg = el("svg", { viewBox: "0 0 170 132", width: 170, height: 132 });
+    var x0 = 26, y0 = 98, bw = 26, scale = 220;
+    el("line", { x1: x0, y1: y0, x2: x0 + bw * 5 + 4, y2: y0, stroke: "#333" }, svg);
+    el("line", { x1: x0, y1: y0, x2: x0, y2: 8, stroke: "#333" }, svg);
+    [0, 0.1, 0.2, 0.3].forEach(function (v) {
+      var y = y0 - v * scale;
+      el("line", { x1: x0 - 3, y1: y, x2: x0, y2: y, stroke: "#333" }, svg);
+      var t = el("text", { x: x0 - 5, y: y + 4, "font-size": 10, "text-anchor": "end" }, svg); t.textContent = v.toFixed(1);
+    });
+    h.forEach(function (v, i) {
+      el("rect", { x: x0 + 2 + i * bw, y: y0 - v * scale, width: bw, height: v * scale, fill: "#9fb8d3", stroke: "#1f4e79" }, svg);
+      var t = el("text", { x: x0 + 2 + i * bw + bw / 2, y: y0 + 13, "font-size": 11, "text-anchor": "middle" }, svg); t.textContent = i;
+    });
+    var t = el("text", { x: x0 + 70, y: 129, "font-size": 10, "text-anchor": "middle" }, svg); t.textContent = "Visits";
+    span.appendChild(svg);
+  });
+
+  // Q4 normal curve (ticks at 60 + 90*i over a 640 width => percentages used by slots)
+  (function () {
+    var svg = document.getElementById("normalCurve");
+    var cx = 330, sd = 90, base = 170, peak = 150, d = "";
+    for (var x = 20; x <= 640; x += 2) {
+      var z = (x - cx) / sd, y = base - peak * Math.exp(-z * z / 2);
+      d += (x === 20 ? "M" : "L") + x + " " + y.toFixed(1);
+    }
+    el("path", { d: d, fill: "none", stroke: "#1f4e79", "stroke-width": 2.5 }, svg);
+    el("line", { x1: 10, y1: base, x2: 635, y2: base, stroke: "#333", "stroke-width": 1.5 }, svg);
+    for (var i = -3; i <= 3; i++) {
+      var tx = cx + i * sd;
+      el("line", { x1: tx, y1: base - 6, x2: tx, y2: base + 8, stroke: "#333", "stroke-width": 1.5 }, svg);
+    }
+  })();
+
+  // Q8 dotplot
+  (function () {
+    var counts = {"28.0":1,"28.1":1,"28.3":1,"28.5":2,"28.6":3,"28.7":1,"28.8":2,"28.9":3,"29.0":3,"29.1":4,"29.2":5,"29.3":6,"29.4":5,"29.5":8,"29.6":11,"29.7":13,"29.8":15,"29.9":12,"30.0":10,"30.1":14,"30.2":9,"30.3":11,"30.4":8,"30.5":8,"30.6":7,"30.7":7,"30.8":3,"30.9":5,"31.0":8,"31.1":5,"31.2":2,"31.3":2,"31.4":1,"31.5":1,"31.8":1,"32.2":1,"32.3":1};
+    var svg = document.getElementById("dotplot");
+    var left = 30, right = 660, lo = 27.5, hi = 32.5, base = 172;
+    function X(v) { return left + (v - lo) / (hi - lo) * (right - left); }
+    el("line", { x1: left - 10, y1: base, x2: right + 10, y2: base, stroke: "#333" }, svg);
+    for (var v = 27.5; v <= 32.51; v += 0.5) {
+      el("line", { x1: X(v), y1: base, x2: X(v), y2: base + 6, stroke: "#333" }, svg);
+      var t = el("text", { x: X(v), y: base + 20, "font-size": 13, "text-anchor": "middle" }, svg); t.textContent = v.toFixed(1);
+    }
+    var lab = el("text", { x: (left + right) / 2, y: base + 37, "font-size": 13, "text-anchor": "middle" }, svg);
+    lab.textContent = "Simulated mean weight (g)";
+    Object.keys(counts).forEach(function (k) {
+      for (var j = 0; j < counts[k]; j++)
+        el("circle", { cx: X(parseFloat(k)), cy: base - 6 - j * 10.2, r: 4, fill: "#1f4e79" }, svg);
+    });
+  })();
+
+  /* ---------- drag and drop + tap to place ---------- */
+  var picked = null;
+  function homeBank(chip) { return chip.closest(".sort").querySelector(".bank"); }
+  function place(chip, target) {
+    if (locked || !chip || !target) return;
+    if (chip.closest(".sort") !== target.closest(".sort")) return;
+    // slot zones on the curve hold only one chip
+    if (target.closest(".slots")) {
+      var existing = target.querySelector(".chip");
+      if (existing && existing !== chip) homeBank(existing).appendChild(existing);
+    }
+    target.appendChild(chip);
+    save();
+  }
+  function clearPick() {
+    if (picked) picked.classList.remove("picked");
+    picked = null;
+    document.querySelectorAll(".targetable").forEach(function (z) { z.classList.remove("targetable"); });
+  }
+  document.querySelectorAll(".chip").forEach(function (chip) {
+    chip.setAttribute("draggable", "true");
+    chip.setAttribute("tabindex", "0");
+    chip.addEventListener("dragstart", function (e) {
+      if (locked) { e.preventDefault(); return; }
+      e.dataTransfer.setData("text/plain", chip.dataset.id);
+      e.dataTransfer.effectAllowed = "move";
+    });
+    function activate(e) {
+      if (locked) return;
+      e.stopPropagation();
+      if (chip.parentElement.classList.contains("zone")) { // tap a placed chip -> send back
+        clearPick(); homeBank(chip).appendChild(chip); save(); return;
+      }
+      if (picked === chip) { clearPick(); return; }
+      clearPick();
+      picked = chip; chip.classList.add("picked");
+      chip.closest(".sort").querySelectorAll(".zone").forEach(function (z) { z.classList.add("targetable"); });
+    }
+    chip.addEventListener("click", activate);
+    chip.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); activate(e); } });
+  });
+  document.querySelectorAll(".zone, .bank").forEach(function (z) {
+    z.addEventListener("dragover", function (e) { if (!locked) { e.preventDefault(); z.classList.add("over"); } });
+    z.addEventListener("dragleave", function () { z.classList.remove("over"); });
+    z.addEventListener("drop", function (e) {
+      e.preventDefault(); z.classList.remove("over");
+      var chip = document.querySelector('.chip[data-id="' + e.dataTransfer.getData("text/plain") + '"]');
+      place(chip, z); clearPick();
+    });
+    z.addEventListener("click", function () { if (picked) { place(picked, z); clearPick(); } });
+  });
+  document.addEventListener("click", function (e) { if (!e.target.closest(".sort")) clearPick(); });
+
+  /* ---------- save / restore progress (best effort) ---------- */
+  function snapshot() {
+    var s = { name: val("studentName"), period: val("studentPeriod"), inputs: [], radios: {}, chips: {} };
+    document.querySelectorAll("input.num, select.sel").forEach(function (i) { s.inputs.push(i.value); });
+    document.querySelectorAll(".mc").forEach(function (m) {
+      var c = m.querySelector("input:checked"); s.radios[m.dataset.name] = c ? c.value : "";
+    });
+    document.querySelectorAll(".sort").forEach(function (sort) {
+      sort.querySelectorAll(".zone").forEach(function (z, zi) {
+        z.querySelectorAll(".chip").forEach(function (c) { s.chips[c.dataset.id] = sort.dataset.id + ":" + zi; });
+      });
+    });
+    return s;
+  }
+  function val(id) { return document.getElementById(id).value.trim(); }
+  function save() { if (locked) return; try { localStorage.setItem(STORE, JSON.stringify(snapshot())); } catch (e) {} }
+  function restore() {
+    var s; try { s = JSON.parse(localStorage.getItem(STORE) || "null"); } catch (e) { s = null; }
+    if (!s) return;
+    document.getElementById("studentName").value = s.name || "";
+    document.getElementById("studentPeriod").value = s.period || "";
+    document.querySelectorAll("input.num, select.sel").forEach(function (i, n) { if (s.inputs && s.inputs[n] != null) i.value = s.inputs[n]; });
+    Object.keys(s.radios || {}).forEach(function (name) {
+      var r = s.radios[name] && document.querySelector('input[name="' + name + '"][value="' + s.radios[name] + '"]');
+      if (r) r.checked = true;
+    });
+    Object.keys(s.chips || {}).forEach(function (id) {
+      var parts = s.chips[id].split(":");
+      var sort = document.querySelector('.sort[data-id="' + parts[0] + '"]');
+      var chip = document.querySelector('.chip[data-id="' + id + '"]');
+      if (sort && chip) { var z = sort.querySelectorAll(".zone")[+parts[1]]; if (z) z.appendChild(chip); }
+    });
+  }
+  document.addEventListener("input", save);
+  document.addEventListener("change", save);
+
+  /* ---------- grading ---------- */
+  function parseNum(t) {
+    t = String(t).replace(/[%,\s]/g, "").replace(/[−–]/g, "-");
+    if (t === "" || isNaN(Number(t))) return null;
+    return Number(t);
+  }
+  function markNode(node, ok) { node.classList.remove("right-mark", "wrong-mark"); node.classList.add(ok ? "right-mark" : "wrong-mark"); }
+
+  function gradeSection(sec) {
+    var got = 0, total = 0, marks = [];
+    function mark(node, ok) { marks.push(ok ? "1" : "0"); markNode(node, ok); }
+    sec.querySelectorAll("input.num").forEach(function (i) {
+      var v = parseNum(i.value), ok = v !== null && Math.abs(v - Number(i.dataset.ans)) <= Number(i.dataset.tol) + 1e-9;
+      total++; if (ok) got++; mark(i, ok);
+    });
+    sec.querySelectorAll("select.sel").forEach(function (s) {
+      var ok = s.value === s.dataset.ans; total++; if (ok) got++; mark(s, ok);
+    });
+    sec.querySelectorAll(".mc").forEach(function (m) {
+      var c = m.querySelector("input:checked"), ok = !!c && c.value === m.dataset.ans;
+      total++; if (ok) got++; mark(m, ok);
+    });
+    sec.querySelectorAll(".zone").forEach(function (z) {
+      var want = z.dataset.accept.split(",").sort().join(",");
+      var have = Array.prototype.map.call(z.querySelectorAll(".chip"), function (c) { return c.dataset.id; }).sort().join(",");
+      var ok = want === have; total++; if (ok) got++; mark(z, ok);
+    });
+    return { got: got, total: total, marks: marks };
+  }
+
+  document.getElementById("submitBtn").addEventListener("click", function () {
+    var msg = document.getElementById("msg");
+    if (!val("studentName")) { msg.textContent = "Please enter your name at the top before submitting."; document.getElementById("studentName").focus(); return; }
+    if (!confirm("Submit your answers? You won't be able to change them afterward.")) return;
+    msg.textContent = "";
+    clearPick();
+    var rows = "", G = 0, T = 0, perQ = [], detail = [];
+    document.querySelectorAll("section.q").forEach(function (sec) {
+      var r = gradeSection(sec); G += r.got; T += r.total;
+      perQ.push(r.got);
+      detail.push("Q" + sec.dataset.q + " " + r.got + "/" + r.total + " [" + r.marks.join("") + "]");
+      sec.querySelector(".qscore").textContent = r.got + " / " + r.total;
+      rows += "<tr><td>Question " + sec.dataset.q + "</td><td>" + r.got + " / " + r.total + "</td></tr>";
+    });
+    locked = true;
+    document.querySelectorAll("input, select").forEach(function (i) { i.disabled = true; });
+    document.querySelectorAll(".sort").forEach(function (s) { s.classList.add("locked"); });
+    document.querySelectorAll(".chip").forEach(function (c) { c.setAttribute("draggable", "false"); });
+    this.disabled = true;
+    var when = new Date().toLocaleString();
+    var res = document.getElementById("results");
+    res.innerHTML = "<h2>Score: " + G + " / " + T + " (" + Math.round(100 * G / T) + "%)</h2>" +
+      "<div>" + escapeHtml(val("studentName")) + (val("studentPeriod") ? " &middot; Period " + escapeHtml(val("studentPeriod")) : "") +
+      " &middot; Submitted " + when + "</div><table>" + rows + "</table>" +
+      "<p>Green boxes are correct; red boxes need another look.</p><p id=\"sendStatus\">Sending your score to your teacher&hellip;</p>";
+    res.style.display = "block";
+    sendScore({ name: val("studentName"), period: val("studentPeriod"), score: G, total: T,
+                percent: Math.round(100 * G / T), questions: perQ, detail: detail.join("  ") });
+    res.scrollIntoView({ behavior: "smooth" });
+    try { localStorage.removeItem(STORE); } catch (e) {}
+  });
+  function sendScore(payload) {
+    var status = document.getElementById("sendStatus");
+    function fail() {
+      status.innerHTML = "<b style=\"color:#b3261e\">Your score could not be sent.</b> Click <b>Print / Save as PDF</b> and turn in the PDF instead.";
+    }
+    if (!/^https:\/\/script\.google\.com\//.test(SHEET_URL)) { fail(); return; }
+    fetch(SHEET_URL, { method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain;charset=utf-8" },
+                       body: JSON.stringify(payload) })
+      .then(function () { status.innerHTML = "<b style=\"color:#1e7b34\">&#10003; Your score was sent to your teacher.</b> You're done!"; })
+      .catch(fail);
+  }
+  function escapeHtml(s) { return s.replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+  document.getElementById("printBtn").addEventListener("click", function () { window.print(); });
+
+  restore();
+})();
+</script>
+</body>
+</html>
